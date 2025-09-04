@@ -1,4 +1,5 @@
 import { Scene } from 'phaser';
+import type { CollectibleProperties, ExtendedTiledObject } from '../types/GameTypes';
 
 /**
  * Collectible sprite class
@@ -20,7 +21,7 @@ export class Collectible extends Phaser.Physics.Arcade.Sprite {
     private mustCollect: boolean = false;
     private shouldRotate: boolean = false;
     private particleColor: number = 0xFFFFFF;
-    private properties: any = {};
+    private properties: CollectibleProperties = {};
 
     constructor(scene: Scene, collectibleObject: Phaser.Types.Tilemaps.TiledObject) {
         const x = collectibleObject.x || 0;
@@ -205,7 +206,7 @@ export class Collectible extends Phaser.Physics.Arcade.Sprite {
         return this.collectibleType;
     }
     
-    getProperties(): any {
+    getProperties(): CollectibleProperties {
         return this.properties;
     }
 }

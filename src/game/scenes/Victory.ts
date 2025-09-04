@@ -6,6 +6,10 @@ export class Victory extends Scene {
     private totalScore: number = 0;
     private itemsByType: Map<string, CollectedItemData[]> = new Map();
     private totalItemsCollected: number = 0;
+    private gameTime: number = 0;
+    private timeScore: number = 0;
+    private killScore: number = 0;
+    private killCount: number = 0;
     // private uniqueItemsCollected: number = 0;
     
     constructor() {
@@ -16,11 +20,19 @@ export class Victory extends Scene {
         totalScore?: number; 
         itemsByType?: Map<string, CollectedItemData[]>;
         totalItemsCollected?: number;
+        gameTime?: number;
+        timeScore?: number;
+        killScore?: number;
+        killCount?: number;
         // uniqueItemsCollected?: number;
     }) {
         this.totalScore = data.totalScore || 0;
         this.itemsByType = data.itemsByType || new Map();
         this.totalItemsCollected = data.totalItemsCollected || 0;
+        this.gameTime = data.gameTime || 0;
+        this.timeScore = data.timeScore || 0;
+        this.killScore = data.killScore || 0;
+        this.killCount = data.killCount || 0;
         // this.uniqueItemsCollected = data.uniqueItemsCollected || 0;
     }
 
@@ -59,6 +71,52 @@ export class Victory extends Scene {
         scoreText.setOrigin(0.5);
         scoreText.setAlpha(0);
         
+        // Display time information
+        const minutes = Math.floor(this.gameTime / 60000);
+        const seconds = Math.floor((this.gameTime % 60000) / 1000);
+        const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        const timeText = this.add.text(centerX, 210, `Game Time: ${timeString}`, {
+            fontFamily: 'Arial Black',
+            fontSize: 32,
+            color: '#FFFFFF',
+            stroke: '#000000',
+            strokeThickness: 4
+        });
+        timeText.setOrigin(0.5);
+        timeText.setAlpha(0);
+        
+        const timeScoreText = this.add.text(centerX, 250, `Time Bonus: ${this.timeScore}`, {
+            fontFamily: 'Arial Black',
+            fontSize: 28,
+            color: '#90EE90',
+            stroke: '#000000',
+            strokeThickness: 4
+        });
+        timeScoreText.setOrigin(0.5);
+        timeScoreText.setAlpha(0);
+        
+        // Display kill information
+        const killText = this.add.text(centerX, 290, `Enemies Killed: ${this.killCount}`, {
+            fontFamily: 'Arial Black',
+            fontSize: 28,
+            color: '#FFFFFF',
+            stroke: '#000000',
+            strokeThickness: 4
+        });
+        killText.setOrigin(0.5);
+        killText.setAlpha(0);
+        
+        const killScoreText = this.add.text(centerX, 330, `Kill Bonus: ${this.killScore}`, {
+            fontFamily: 'Arial Black',
+            fontSize: 28,
+            color: '#FFB347',
+            stroke: '#000000',
+            strokeThickness: 4
+        });
+        killScoreText.setOrigin(0.5);
+        killScoreText.setAlpha(0);
+        
         this.time.delayedCall(300, () => {
             this.tweens.add({
                 targets: scoreText,
@@ -69,11 +127,51 @@ export class Victory extends Scene {
             });
         });
         
-        // Display collected items by type
-        this.displayCollectedItems();
+        this.time.delayedCall(500, () => {
+            this.tweens.add({
+                targets: timeText,
+                alpha: 1,
+                scale: { from: 0.5, to: 1 },
+                duration: 500,
+                ease: 'Back.easeOut'
+            });
+        });
+        
+        this.time.delayedCall(700, () => {
+            this.tweens.add({
+                targets: timeScoreText,
+                alpha: 1,
+                scale: { from: 0.5, to: 1 },
+                duration: 500,
+                ease: 'Back.easeOut'
+            });
+        });
+        
+        this.time.delayedCall(900, () => {
+            this.tweens.add({
+                targets: killText,
+                alpha: 1,
+                scale: { from: 0.5, to: 1 },
+                duration: 500,
+                ease: 'Back.easeOut'
+            });
+        });
+        
+        this.time.delayedCall(1100, () => {
+            this.tweens.add({
+                targets: killScoreText,
+                alpha: 1,
+                scale: { from: 0.5, to: 1 },
+                duration: 500,
+                ease: 'Back.easeOut'
+            });
+        });
+        
+
+        // Note: Removed item collection display for survival mode
         
         // Continue game prompt
-        const continueText = this.add.text(centerX, centerY + 200, 'Click to Continue', {
+        const continueText = this.add.text(centerX, centerY + 300, 'Click to Continue', {
             fontFamily: 'Arial',
             fontSize: 28,
             color: '#ffffff',

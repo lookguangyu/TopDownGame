@@ -1,3 +1,5 @@
+import { SingletonManager } from '../core/BaseManager';
+
 /**
  * Animation configuration interface
  */
@@ -30,11 +32,12 @@ export interface LegacyAnimationFormat {
     type?: string;
     animations: Array<{
         name: string;
-        filename_prefix: string;
-        frame_range: {
+        filename_prefix?: string;
+        frame_range?: {
             from: number;
             to: number;
         };
+        frames?: string[];
         padding_size?: number;
     }>;
 }
@@ -48,29 +51,18 @@ export interface LegacyAnimationFormat {
  * - Tracking which animations belong to which atlas
  * - Providing helper methods to play animations
  */
-export class AnimationManager {
-    private static instance: AnimationManager;
-    private scene: Phaser.Scene;
+export class AnimationManager extends SingletonManager {
     private atlasAnimations: Map<string, AnimationConfig[]> = new Map();
     private createdAnimations: Set<string> = new Set();
     
-    private constructor() {}
-    
-    /**
-     * Get the singleton instance
-     */
-    static getInstance(): AnimationManager {
-        if (!AnimationManager.instance) {
-            AnimationManager.instance = new AnimationManager();
-        }
-        return AnimationManager.instance;
+    protected onInitialize(): void {
+        // AnimationManager specific initialization
+        this.atlasAnimations.clear();
+        this.createdAnimations.clear();
     }
     
-    /**
-     * Initialize the manager with a scene
-     */
-    init(scene: Phaser.Scene): void {
-        this.scene = scene;
+    protected onCleanup(): void {
+        // Clean up animations
         this.atlasAnimations.clear();
         this.createdAnimations.clear();
     }
@@ -91,16 +83,32 @@ export class AnimationManager {
         const atlasKey = config.name;
         const animations: AnimationConfig[] = [];
         
+
+        
         for (const anim of config.animations) {
-            animations.push({
-                key: anim.name,
-                prefix: anim.filename_prefix,
-                start: anim.frame_range.from,
-                end: anim.frame_range.to,
-                zeroPad: anim.padding_size || 4,
-                frameRate: 10,
-                repeat: -1
-            });
+
+            if (anim.frames) {
+                // New format with explicit frame names
+                animations.push({
+                    key: anim.name,
+                    frames: anim.frames,
+                    frameRate: 10,
+                    repeat: -1
+                });
+            } else if (anim.frame_range && anim.filename_prefix) {
+                // Legacy format with frame range
+                animations.push({
+                    key: anim.name,
+                    prefix: anim.filename_prefix,
+                    start: anim.frame_range.from,
+                    end: anim.frame_range.to,
+                    zeroPad: anim.padding_size || 4,
+                    frameRate: 10,
+                    repeat: -1
+                });
+            } else {
+                console.warn(`Invalid animation config for ${anim.name}: missing frames or frame_range`);
+            }
         }
         
         this.registerAtlasAnimations(atlasKey, animations);
@@ -156,6 +164,22 @@ export class AnimationManager {
         // Generate frames based on configuration
         if (config.frames) {
             // Use specific frame names
+            // First, verify that the frames exist in the atlas
+            const atlas = this.getScene().textures.get(atlasKey);
+
+            
+            // Get available frame names properly
+            const frameNames = atlas.getFrameNames();
+
+            
+            for (const frameName of config.frames) {
+                if (!atlas.has(frameName)) {
+                    console.warn(`Frame not found in atlas ${atlasKey}: ${frameName}`);
+
+                    return;
+                }
+            }
+            
             frames = config.frames.map(frameName => ({
                 key: atlasKey,
                 frame: frameName
@@ -169,12 +193,12 @@ export class AnimationManager {
             
             // Check if frames exist before creating animation
             const testFrame = `${config.prefix}${String(start).padStart(zeroPad, '0')}${suffix}`;
-            if (!this.scene.textures.get(atlasKey).has(testFrame)) {
+            if (!this.getScene().textures.get(atlasKey).has(testFrame)) {
                 console.warn(`Frame not found in atlas ${atlasKey}: ${testFrame}`);
                 return;
             }
             
-            frames = this.scene.anims.generateFrameNames(atlasKey, {
+            frames = this.getScene().anims.generateFrameNames(atlasKey, {
                 prefix: config.prefix,
                 start: start,
                 end: end,
@@ -190,15 +214,21 @@ export class AnimationManager {
         
         // Create the animation
         try {
-            this.scene.anims.create({
+
+            const frameRate = config.frameRate || 10;
+            const duration = (frames.length / frameRate) * 1000; // Convert to milliseconds
+            
+            this.getScene().anims.create({
                 key: animKey,
                 frames: frames,
-                frameRate: config.frameRate || 10,
+                frameRate: frameRate,
+                duration: duration,
                 repeat: config.repeat !== undefined ? config.repeat : -1,
                 yoyo: config.yoyo || false
             });
             
             this.createdAnimations.add(animKey);
+
         } catch (error) {
             console.error(`Error creating animation ${animKey}:`, error);
         }

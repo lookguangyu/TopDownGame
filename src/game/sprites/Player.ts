@@ -1,207 +1,220 @@
-import Phaser from 'phaser';
 import { AnimationManager } from '../managers/AnimationManager';
+import { Weapon } from './Weapon';
+import { InputManager } from '../managers/InputManager';
+import { GameConfig } from '../config/GameConfig';
+import type { IPlayer, IWeapon } from '../types/GameTypes';
 
-export class Player extends Phaser.Physics.Arcade.Sprite {
-    private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
-    private moveSpeed: number = 200;
-    private jumpSpeed: number = 500;
+export class Player extends Phaser.Physics.Arcade.Sprite implements IPlayer {
+    declare body: Phaser.Physics.Arcade.Body;
+    private moveSpeed: number;
     private currentAnimation: string = '';
     private key: string = '';
     
-    // Double jump
-    private jumpCount: number = 0;
-    private maxJumps: number = 2;
-    
-    // Wall jump
-    private isTouchingWall: boolean = false;
-    private wallJumpCooldown: number = 0;
-    private wallJumpSpeed: number = 400;
-    
-    // Charge jump
-    private isCharging: boolean = false;
-    private chargeTime: number = 0;
-    private maxChargeTime: number = 1000;
-    private minChargeTime: number = 200;
-    private chargeJumpMultiplier: number = 2;
-    
     // Health and damage
-    private health: number = 3;
-    private maxHealth: number = 3;
+    private health: number;
+    private maxHealth: number;
     private isInvulnerable: boolean = false;
     
-    // Animation
+    // Managers
     private animationManager: AnimationManager;
+    private inputManager: InputManager;
+    private gameConfig: GameConfig;
+    
+    // Movement state
+    private isMoving: boolean = false;
+    private lastDirection: string = 'down';
+    
+    // Weapon system
+    private weapon: Weapon;
 
     constructor(scene: Phaser.Scene, tiledObject: Phaser.Types.Tilemaps.TiledObject) {
-        let x = tiledObject.x ?? 0;
-        let y = tiledObject.y ?? 0;
-
-        let key = tiledObject.name;
+        const x = tiledObject.x ?? 0;
+        const y = tiledObject.y ?? 0;
+        const key = tiledObject.name;
 
         super(scene, x, y, key);
 
-        this.key = key;
+        // 初始化管理器和配置
+        this.gameConfig = GameConfig.getInstance();
         this.animationManager = AnimationManager.getInstance();
+        this.inputManager = new InputManager(scene);
+        
+        this.key = key;
+        this.setupFromConfig();
 
         scene.add.existing(this);
         scene.physics.add.existing(this);
 
-        let texture = scene.textures.get(key);
-        let firstFrame = (texture.frames as any)[texture.firstFrame];
+        this.setupPhysicsAndDisplay(tiledObject);
+        
+        // 创建随机武器
+        this.weapon = new Weapon(scene, x, y, 'random');
+        
+        // Play initial animation
+        this.playAnimation('idle');
+    }
+    
+    private setupFromConfig(): void {
+        const playerConfig = this.gameConfig.getPlayerConfig();
+        this.moveSpeed = playerConfig.moveSpeed;
+        this.health = playerConfig.health;
+        this.maxHealth = playerConfig.maxHealth;
+    }
+    
+    private setupPhysicsAndDisplay(tiledObject: Phaser.Types.Tilemaps.TiledObject): void {
+        const texture = this.scene.textures.get(this.key);
+        const firstFrame = (texture.frames as any)[texture.firstFrame];
+        const playerConfig = this.gameConfig.getPlayerConfig();
+        const physicsConfig = this.gameConfig.getPhysicsConfig();
 
-        let displayWidth = (tiledObject.width ?? firstFrame.width);
-        let displayHeight = (tiledObject.height ?? firstFrame.height);
+        const displayWidth = tiledObject.width ?? firstFrame.width;
+        const displayHeight = tiledObject.height ?? firstFrame.height;
 
-        let xScale = displayWidth / firstFrame.width
-        let yScale = displayHeight / firstFrame.height
+        const xScale = displayWidth / firstFrame.width;
+        const yScale = displayHeight / firstFrame.height;
         
         this.setScale(xScale, yScale);
-        // 设置物理碰撞体为原始尺寸的80%
-        this.setSize(firstFrame.width * 0.7, firstFrame.height * 0.7);
-        // 居中偏移量为原始尺寸的10%
-        this.setOffset(firstFrame.width * 0.1, firstFrame.height * 0.1);
+        
+        // 使用配置文件中的碰撞体设置
+        const collisionSize = playerConfig.collisionSize;
+        this.setSize(
+            firstFrame.width * collisionSize.width, 
+            firstFrame.height * collisionSize.height
+        );
+        this.setOffset(
+            firstFrame.width * collisionSize.offsetX, 
+            firstFrame.height * collisionSize.offsetY
+        );
         
         this.setCollideWorldBounds(true);
-        this.setBounce(0.1);
-        this.setGravityY(800);
-        
-        this.cursors = scene.input.keyboard!.createCursorKeys();
-        
-        // Play initial animation using AnimationManager
-        this.playAnimation('idle');
+        this.setBounce(physicsConfig.bounce);
     }
 
     private playAnimation(animName: string): void {
-        const animKey = this.animationManager.getAnimationKey(this.key, animName);
-        if (this.animationManager.hasAnimation(this.key, animName)) {
+        // 对于骑士精灵，直接使用预定义的动画键
+        if (this.key === 'knight_idle') {
+            let animKey = '';
+            if (animName === 'idle') {
+                animKey = 'knight_idle';
+            } else if (animName === 'run') {
+                animKey = 'knight_run';
+            } else {
+                animKey = 'knight_idle'; // 默认使用待机动画
+            }
+            
             if (this.currentAnimation !== animKey) {
                 this.play(animKey);
                 this.currentAnimation = animKey;
+            }
+        } else {
+            // 原有的动画系统
+            const animKey = this.animationManager.getAnimationKey(this.key, animName);
+            console.log(`Trying to play animation: ${animKey}`);
+            console.log(`Animation exists:`, this.animationManager.hasAnimation(this.key, animName));
+            
+            if (this.animationManager.hasAnimation(this.key, animName)) {
+                if (this.currentAnimation !== animKey) {
+                    console.log(`Playing animation: ${animKey}`);
+                    this.play(animKey);
+                    this.currentAnimation = animKey;
+                }
+            } else {
+                console.warn(`Animation ${animKey} not found. Available animations:`, this.animationManager.getAtlasAnimations(this.key));
+                // 回退：尝试使用walk动画
+                const fallbackAnimKey = this.animationManager.getAnimationKey(this.key, 'walk');
+                if (this.animationManager.hasAnimation(this.key, 'walk')) {
+                    console.log(`Using fallback animation: ${fallbackAnimKey}`);
+                    this.play(fallbackAnimKey);
+                    this.currentAnimation = fallbackAnimKey;
+                }
             }
         }
     }
 
     update(): void {
-        const velocity = this.body?.velocity;
-        if (!velocity) return;
+        if (!this.body?.velocity) return;
 
-        const onGround = this.body?.blocked.down || false;
-        const touchingLeft = this.body?.blocked.left || false;
-        const touchingRight = this.body?.blocked.right || false;
+        // 更新输入管理器
+        this.inputManager.update();
         
-        // Update wall touching status
-        this.isTouchingWall = !onGround && (touchingLeft || touchingRight);
+        this.handleMovement();
+        this.handleWeapon();
+    }
+    
+    private handleMovement(): void {
+        const inputState = this.inputManager.getInputState();
+        const movement = inputState.movement;
         
-        // Update wall jump cooldown
-        if (this.wallJumpCooldown > 0) {
-            this.wallJumpCooldown -= this.scene.game.loop.delta;
-        }
+        // 设置速度
+        this.setVelocityX(movement.direction.x * this.moveSpeed);
+        this.setVelocityY(movement.direction.y * this.moveSpeed);
         
-        // Reset jump count when on ground
-        if (onGround) {
-            this.jumpCount = 0;
-        }
+        // 更新移动状态
+        this.isMoving = movement.isMoving;
         
-        // Horizontal movement
-        if (this.cursors.left.isDown) {
-            this.setVelocityX(-this.moveSpeed);
-            this.setFlipX(true);
-            
-            if (onGround) {
-                this.playAnimation('walk');
-            }
-        } else if (this.cursors.right.isDown) {
-            this.setVelocityX(this.moveSpeed);
-            this.setFlipX(false);
-            
-            if (onGround) {
-                this.playAnimation('walk');
-            }
+        if (this.isMoving) {
+            this.playAnimation('run');
+            this.updateDirection(movement.direction);
         } else {
-            this.setVelocityX(0);
-            
-            if (onGround && !this.cursors.down.isDown && !this.isCharging) {
-                this.playAnimation('idle');
-            }
-        }
-        
-        // Duck
-        if (this.cursors.down.isDown && onGround && !this.isCharging) {
-            this.playAnimation('duck');
-        }
-        
-        // Charge jump (hold space while on ground)
-        const spaceKey = this.scene.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-        
-        if (spaceKey?.isDown && onGround && !this.isCharging) {
-            this.isCharging = true;
-            this.chargeTime = 0;
-            this.playAnimation('duck');
-        }
-        
-        if (this.isCharging && spaceKey?.isDown) {
-            this.chargeTime += this.scene.game.loop.delta;
-            if (this.chargeTime > this.maxChargeTime) {
-                this.chargeTime = this.maxChargeTime;
-            }
-            // Visual feedback for charging (tint color based on charge level)
-            const chargePercent = this.chargeTime / this.maxChargeTime;
-            const tintValue = 0xffffff - Math.floor(chargePercent * 0x008888);
-            this.setTint(tintValue);
-        }
-        
-        // Release charge jump
-        if (this.isCharging && spaceKey?.isUp) {
-            if (this.chargeTime >= this.minChargeTime) {
-                const chargeMultiplier = 1 + (this.chargeTime / this.maxChargeTime) * (this.chargeJumpMultiplier - 1);
-                this.setVelocityY(-this.jumpSpeed * chargeMultiplier);
-                this.jumpCount = 1;
-            }
-            this.isCharging = false;
-            this.chargeTime = 0;
-            this.clearTint();
-            this.playAnimation('jump');
-        }
-        
-        // Normal jump and double jump
-        const justPressedUp = Phaser.Input.Keyboard.JustDown(this.cursors.up);
-        
-        if (justPressedUp && !this.isCharging) {
-            // Wall jump
-            if (this.isTouchingWall && this.wallJumpCooldown <= 0) {
-                const wallJumpX = touchingLeft ? this.wallJumpSpeed : -this.wallJumpSpeed;
-                this.setVelocityX(wallJumpX);
-                this.setVelocityY(-this.jumpSpeed * 0.9);
-                this.wallJumpCooldown = 300;
-                this.jumpCount = 1;
-                this.playAnimation('jump');
-            }
-            // Normal jump and double jump
-            else if (this.jumpCount < this.maxJumps) {
-                const jumpPower = this.jumpCount === 0 ? this.jumpSpeed : this.jumpSpeed * 0.85;
-                this.setVelocityY(-jumpPower);
-                this.jumpCount++;
-                this.playAnimation('jump');
-            }
-        }
-        
-        // Wall slide effect
-        if (this.isTouchingWall && velocity.y > 0) {
-            this.setVelocityY(Math.min(velocity.y, 100));
-            this.playAnimation('climb');
-        }
-        
-        // Jump animation
-        if (!onGround && !this.isTouchingWall) {
-            this.playAnimation('jump');
+            this.playAnimation('idle');
         }
     }
+    
+    private updateDirection(direction: { x: number; y: number }): void {
+        // 更新主要朝向
+        if (Math.abs(direction.y) > Math.abs(direction.x)) {
+            this.lastDirection = direction.y > 0 ? 'down' : 'up';
+        } else {
+            this.lastDirection = direction.x > 0 ? 'right' : 'left';
+        }
+        
+        // 设置精灵朝向
+        if (this.lastDirection === 'left') {
+            this.setFlipX(true);
+        } else if (this.lastDirection === 'right') {
+            this.setFlipX(false);
+        }
+    }
+    
+    private handleWeapon(): void {
+        if (!this.weapon) return;
+        
+        const mousePos = this.inputManager.getMouseWorldPosition();
+        
+        // 更新武器位置和朝向
+        this.weapon.update(this.x, this.y, this.lastDirection, this.isMoving, mousePos.x, mousePos.y);
+        
+        // 处理武器切换
+        if (this.inputManager.isWeaponSwitchPrevPressed()) {
+            this.weapon.switchToPreviousWeapon();
+        }
+        if (this.inputManager.isWeaponSwitchNextPressed()) {
+            this.weapon.switchToNextWeapon();
+        }
+        
+        // 处理射击
+        if (this.inputManager.isShootingKeyboard()) {
+            if (this.weapon.isWeaponReady()) {
+                this.weapon.shoot(); // 朝向当前方向射击
+            }
+        } else if (this.inputManager.isShootingMouse()) {
+            if (this.weapon.isWeaponReady()) {
+                this.weapon.shoot(mousePos.x, mousePos.y); // 朝向鼠标射击
+            }
+        }
+    }
+    
+
 
     hit(): void {
         this.playAnimation('hit');
         
         this.scene.time.delayedCall(500, () => {
-            this.playAnimation('idle');
+            if (this.isMoving) {
+                this.playAnimation('run');
+            } else {
+                this.playAnimation('idle');
+            }
         });
     }
 
@@ -215,8 +228,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
         
         this.playAnimation('hit');
         
-        const knockbackX = this.flipX ? 200 : -200;
-        this.setVelocity(knockbackX, -300);
+        // 使用配置文件中的击退力度
+        const playerConfig = this.gameConfig.getPlayerConfig();
+        const knockbackX = this.flipX ? -playerConfig.knockbackForce.x : playerConfig.knockbackForce.x;
+        const knockbackY = playerConfig.knockbackForce.y;
+        this.setVelocity(knockbackX, knockbackY);
         
         this.scene.tweens.add({
             targets: this,
@@ -237,7 +253,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     private handleDeath(): void {
         this.setTint(0xff0000);
-        this.setVelocity(0, -400);
+        this.setVelocity(0, 0);
         this.body!.enable = false;
         
         this.scene.time.delayedCall(1000, () => {
@@ -257,5 +273,33 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     getMaxHealth(): number {
         return this.maxHealth;
+    }
+    
+    isPlayerMoving(): boolean {
+        return this.isMoving;
+    }
+    
+    getLastDirection(): string {
+        return this.lastDirection;
+    }
+    
+    getWeapon(): IWeapon {
+        return this.weapon;
+    }
+    
+    isShooting(): boolean {
+        return this.weapon ? !this.weapon.isWeaponReady() : false;
+    }
+    
+    getInputManager(): InputManager {
+        return this.inputManager;
+    }
+    
+    // 清理资源
+    destroy(): void {
+        if (this.inputManager) {
+            this.inputManager.destroy();
+        }
+        super.destroy();
     }
 }

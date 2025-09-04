@@ -13,7 +13,7 @@ const config: Phaser.Types.Core.GameConfig = {
     width: 1024,
     height: 768,
     parent: 'game-container',
-    backgroundColor: '#028af8',
+    backgroundColor: '#2d5a27', // 改为深绿色，适合地下城主题
     scene: [
         Boot,
         Preloader,
@@ -24,7 +24,7 @@ const config: Phaser.Types.Core.GameConfig = {
     physics: {
         default: "arcade",
         arcade: {
-            gravity: {x: 0, y: 600},
+            gravity: {x: 0, y: 0}, // 移除重力，改为俯视角
             debug: false
         }
     }

@@ -1,9 +1,11 @@
+import type { CollectibleProperties } from '../types/GameTypes';
+
 export interface CollectedItemData {
     name: string;           // Item name (texture key)
     type: string;          // Item type for grouping
     count: number;         // Number collected
     score: number;         // Total score from this item type
-    properties: any;       // Additional properties
+    properties: CollectibleProperties;       // Additional properties
 }
 
 export class CollectedItemsManager {
@@ -27,7 +29,7 @@ export class CollectedItemsManager {
         this.mustCollectItems.add(itemName);
     }
     
-    collectItem(name: string, type: string, score: number = 0, isMustCollect: boolean = false, properties: any = {}): void {
+    collectItem(name: string, type: string, score: number = 0, isMustCollect: boolean = false, properties: CollectibleProperties = {}): void {
         // Update item collection data
         if (!this.items.has(name)) {
             this.items.set(name, {
@@ -105,6 +107,10 @@ export class CollectedItemsManager {
         itemsByType: Map<string, CollectedItemData[]>;
         totalItemsCollected: number;
         uniqueItemsCollected: number;
+        gameTime?: number;
+        timeScore?: number;
+        killScore?: number;
+        killCount?: number;
     } {
         let totalItemsCollected = 0;
         for (const item of this.items.values()) {

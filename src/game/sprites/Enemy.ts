@@ -24,11 +24,11 @@ import { AnimationManager } from '../managers/AnimationManager';
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
     private enemyName: string;
     private damage: number = 1;
-    private moveMethod: string = 'static';
-    private moveSpeed: number = 100;
+    private moveMethod: string = 'follow'; // 默认设置为跟随模式
+    private moveSpeed: number = 120; // 提高默认移动速度
     private jumpPower: number = 400;
     private patrolDistance: number = 200;
-    private detectionRange: number = 300;
+    private detectionRange: number = 500; // 增加检测范围
     private jumpInterval: number = 2000;
     private deathParticleColor: number = 0xff0000;  // Default red
     

@@ -1,36 +1,29 @@
 {
-  "height": 19,
+  "height": 12,
   "infinite": false,
   "layers": [
     {
       "data": [
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,
-        0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,2,2,0,0,1,0,
-        0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,2,2,0,1,1,0,0,0,0,
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,
-        0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        0,0,0,0,0,1,1,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,
-        0,0,2,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,
-        0,0,1,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,
-        0,0,0,0,0,0,0,0,0,1,2,0,0,0,0,0,0,0,1,1,1,0,0,0,0,
-        0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,2,2,0,
-        0,1,1,0,0,0,0,0,0,0,0,0,0,0,2,1,0,0,0,0,0,0,1,1,0,
-        0,0,0,0,0,0,0,2,2,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,
-        0,0,0,0,0,0,2,1,1,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,
-        2,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,2,1,1,0,0,0,0,0,
-        1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0,0,0,0,
-        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0
+        2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+        2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+        2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+        2,1,1,2,2,1,1,1,1,1,1,2,2,1,1,2,
+        2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+        2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+        2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+        2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+        2,1,1,2,2,1,1,1,1,1,1,2,2,1,1,2,
+        2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+        2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+        2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
       ],
-      "height": 19,
+      "height": 12,
       "id": 3,
       "name": "Level1",
       "opacity": 1,
       "type": "tilelayer",
       "visible": true,
-      "width": 25,
+      "width": 16,
       "x": 0,
       "y": 0
     },
@@ -42,110 +35,74 @@
         {
           "gid": 3,
           "height": 64,
-          "id": 38,
-          "name": "character_purple",
+          "id": 1,
+          "name": "knight",
           "rotation": 0,
           "type": "player",
           "visible": true,
           "width": 64,
-          "x": 64,
-          "y": 960
+          "x": 512,
+          "y": 384
         },
         {
           "gid": 4,
           "height": 64,
-          "id": 38,
+          "id": 2,
           "name": "spikes",
           "rotation": 0,
           "type": "hazard",
           "visible": true,
           "width": 64,
-          "x": 128,
-          "y": 1088
+          "x": 192,
+          "y": 192
+        },
+        {
+          "gid": 4,
+          "height": 64,
+          "id": 3,
+          "name": "spikes",
+          "rotation": 0,
+          "type": "hazard",
+          "visible": true,
+          "width": 64,
+          "x": 832,
+          "y": 320
+        },
+        {
+          "gid": 4,
+          "height": 64,
+          "id": 4,
+          "name": "spikes",
+          "rotation": 0,
+          "type": "hazard",
+          "visible": true,
+          "width": 64,
+          "x": 384,
+          "y": 448
+        },
+        {
+          "gid": 4,
+          "height": 64,
+          "id": 5,
+          "name": "spikes",
+          "rotation": 0,
+          "type": "hazard",
+          "visible": true,
+          "width": 64,
+          "x": 640,
+          "y": 640
         },
         {
           "gid": 5,
           "height": 64,
-          "id": 37,
+          "id": 6,
           "name": "flag_green_a",
           "rotation": 0,
           "type": "goal",
           "visible": true,
           "width": 64,
-          "x": 1472,
-          "y": 64
-        },
-        {
-          "gid": 6,
-          "height": 64,
-          "id": 37,
-          "name": "coin_gold",
-          "rotation": 0,
-          "type": "collectible",
-          "visible": true,
-          "width": 64,
-          "x": 576,
-          "y": 640
-        },
-        {
-          "gid": 7,
-          "height": 64,
-          "id": 37,
-          "name": "hud_key_green",
-          "rotation": 0,
-          "type": "collectible",
-          "visible": true,
-          "width": 64,
-          "x": 896,
-          "y": 448
-        },
-        {
-          "gid": 6,
-          "height": 64,
-          "id": 38,
-          "name": "coin_gold",
-          "rotation": 0,
-          "type": "collectible",
-          "visible": true,
-          "width": 64,
-          "x": 320,
-          "y": 448
-        },
-        {
-          "gid": 6,
-          "height": 64,
-          "id": 39,
-          "name": "coin_gold",
-          "rotation": 0,
-          "type": "collectible",
-          "visible": true,
-          "width": 64,
-          "x": 768,
-          "y": 704
-        },
-        {
-          "gid": 6,
-          "height": 64,
-          "id": 40,
-          "name": "coin_gold",
-          "rotation": 0,
-          "type": "collectible",
-          "visible": true,
-          "width": 64,
-          "x": 1088,
-          "y": 960
-        },
-        {
-          "gid": 8,
-          "height": 64,
-          "id": 41,
-          "name": "frog",
-          "rotation": 0,
-          "type": "enemy",
-          "visible": true,
-          "width": 64,
-          "x": 640,
-          "y": 1088
+          "x": 512,
+          "y": 128
         }
       ],
       "opacity": 1,
@@ -160,19 +117,19 @@
   "orientation": "orthogonal",
   "renderorder": "right-down",
   "tiledversion": "1.2.2",
-  "tileheight": 64,
+  "tileheight": 16,
   "tilesets": [
     {
       "firstgid": 1,
-      "image": "assets/tilemap/tiles/terrain_grass_block_center.png",
-      "imageheight": 64,
-      "imagewidth": 64,
+      "image": "assets/tilemap/tiles/floor_1.png",
+      "imageheight": 16,
+      "imagewidth": 16,
       "margin": 0,
-      "name": "terrain_grass_block_center",
+      "name": "floor_1",
       "spacing": 0,
       "tilecount": 1,
-      "tileheight": 64,
-      "tilewidth": 64,
+      "tileheight": 16,
+      "tilewidth": 16,
       "tiles":[
         {
          "id":0,
@@ -180,21 +137,21 @@
                 {
                  "name":"collides",
                  "type":"bool",
-                 "value":true
+                 "value":false
                 }]
         }]
     },
     {
       "firstgid": 2,
-      "image": "assets/tilemap/tiles/terrain_grass_block_top.png",
-      "imageheight": 64,
-      "imagewidth": 64,
+      "image": "assets/tilemap/tiles/wall_1.png",
+      "imageheight": 16,
+      "imagewidth": 16,
       "margin": 0,
-      "name": "terrain_grass_block_top",
+      "name": "wall_1",
       "spacing": 0,
       "tilecount": 1,
-      "tileheight": 64,
-      "tilewidth": 64,
+      "tileheight": 16,
+      "tilewidth": 16,
       "tiles":[
         {
          "id":0,
@@ -208,11 +165,11 @@
     },
     {
       "firstgid": 3,
-      "image": "assets/player/character_purple.png",
+      "image": "assets/player/knight.png",
       "imageheight": 64,
       "imagewidth": 64,
       "margin": 0,
-      "name": "character_purple",
+      "name": "knight",
       "spacing": 0,
       "tilecount": 1,
       "tileheight": 64,
@@ -232,18 +189,23 @@
     {
       "firstgid": 4,
       "image": "assets/hazards/spikes.png",
-      "imageheight": 64,
-      "imagewidth": 64,
+      "imageheight": 16,
+      "imagewidth": 160,
       "margin": 0,
       "name": "spikes",
       "spacing": 0,
       "tilecount": 1,
-      "tileheight": 64,
-      "tilewidth": 64,
+      "tileheight": 16,
+      "tilewidth": 16,
       "tiles":[
         {
          "id":0,
          "properties":[
+                {
+                 "name":"atlas",
+                 "type":"bool",
+                 "value":false
+                },
                 {
                  "name":"damage",
                  "type":"int",
@@ -261,123 +223,16 @@
       "spacing": 0,
       "tilecount": 1,
       "tileheight": 64,
-      "tilewidth": 64
-    },
-    {
-      "firstgid": 6,
-      "image": "assets/collectible/coin_gold.png",
-      "imageheight": 64,
-      "imagewidth": 64,
-      "margin": 0,
-      "name": "coin_gold",
-      "spacing": 0,
-      "tilecount": 1,
-      "tileheight": 64,
       "tilewidth": 64,
       "tiles":[
         {
          "id":0,
-         "properties":[
-                {
-                 "name":"score",
-                 "type":"int",
-                 "value":100
-                },
-                {
-                 "name":"type",
-                 "type":"string",
-                 "value":"coin"
-                },
-                {
-                 "name":"rotate",
-                 "type":"bool",
-                 "value":true
-                },
-                {
-                 "name":"particle_color",
-                 "type":"string",
-                 "value":"#FFD700"
-                }]
-        }]
-    },
-    {
-      "firstgid": 7,
-      "image": "assets/collectible/hud_key_green.png",
-      "imageheight": 64,
-      "imagewidth": 64,
-      "margin": 0,
-      "name": "hud_key_green",
-      "spacing": 0,
-      "tilecount": 1,
-      "tileheight": 64,
-      "tilewidth": 64,
-      "tiles":[
-        {
-         "id":0,
-         "properties":[
-                {
-                 "name":"must_collect",
-                 "type":"bool",
-                 "value":true
-                },
-                {
-                 "name":"type",
-                 "type":"string",
-                 "value":"key"
-                },
-                {
-                 "name":"rotate",
-                 "type":"bool",
-                 "value":false
-                },
-                {
-                 "name":"particle_color",
-                 "type":"string",
-                 "value":"#00FF00"
-                }]
-        }]
-    },
-    {
-      "firstgid": 8,
-      "image": "assets/enemy/frog.png",
-      "imageheight": 64,
-      "imagewidth": 64,
-      "margin": 0,
-      "name": "frog",
-      "spacing": 0,
-      "tilecount": 1,
-      "tileheight": 64,
-      "tilewidth": 64,
-      "tiles":[
-        {
-         "id":0,
-         "properties":[
-                {
-                 "name":"move_method",
-                 "type":"string",
-                 "value":"move_and_jump"
-                },
-                {
-                 "name":"atlas",
-                 "type":"bool",
-                 "value":true
-                },
-                {
-                  "name": "damage",
-                  "type": "int",
-                  "value": 1
-                },
-                {
-                  "name": "death_particle_color",
-                  "type": "string",
-                  "value": "#00ff00"
-                }
-            ]
+         "properties":[]
         }]
     }
   ],
-  "tilewidth": 64,
+  "tilewidth":16,
   "type": "map",
   "version": 1.2,
-  "width": 25
+  "width": 16
 }
