@@ -11,7 +11,7 @@ import { HealthUI } from '../ui/HealthUI';
 import { CollectedItemsManager } from '../managers/CollectedItemsManager';
 import { EnemySpawner } from '../managers/EnemySpawner';
 import { ObjectPoolManager } from '../managers/ObjectPoolManager';
-import { GameConfig } from '../config/GameConfig';
+import { ConfigManager } from '../config/ConfigManager';
 import { GameStateManager } from '../managers/GameStateManager';
 import { eventBus, GameEvent } from '../events/EventBus';
 import type { IGameScene } from '../types/GameTypes';
@@ -51,7 +51,7 @@ export class Game extends Scene implements IGameScene
     private killScore: number = 0;
     
     // 配置管理器
-    private gameConfig: GameConfig;
+    private configManager: ConfigManager;
     private objectPoolManager: ObjectPoolManager;
     private gameStateManager: GameStateManager;
 
@@ -59,7 +59,7 @@ export class Game extends Scene implements IGameScene
     {
         super('Game');
         this.collectedItemsManager = new CollectedItemsManager();
-        this.gameConfig = GameConfig.getInstance();
+        this.configManager = ConfigManager.getInstance();
         this.objectPoolManager = ObjectPoolManager.getInstance();
         this.gameStateManager = GameStateManager.getInstance();
     }
@@ -147,19 +147,19 @@ export class Game extends Scene implements IGameScene
     }
     
     private initializeObjectPools(): void {
-        const bulletConfig = this.gameConfig.getBulletConfig();
+        const bulletConfig = this.configManager.getBulletConfig();
         
         // 初始化子弹对象池
         OptimizedBullet.initializePool(this, bulletConfig.poolSize);
         this.objectPoolManager.setMaxPoolSize('bullets', bulletConfig.maxPoolSize);
         
-        if (this.gameConfig.getDebugConfig().enableLogging) {
+        if (this.configManager.getDebugConfig().enableLogging) {
             // 对象池初始化完成
         }
     }
     
     private createUI(): void {
-        const uiConfig = this.gameConfig.getUIConfig();
+        const uiConfig = this.configManager.getUIConfig();
         
         // Create health UI
         this.healthUI = new HealthUI(this, uiConfig.healthUI.x, uiConfig.healthUI.y);
@@ -265,7 +265,7 @@ export class Game extends Scene implements IGameScene
         this.cameras.main.setBounds(0, 0, scaledWidth, scaledHeight);
         
         // Make camera follow the player with configured lerp
-        const cameraConfig = this.gameConfig.getCameraConfig();
+        const cameraConfig = this.configManager.getCameraConfig();
         this.cameras.main.startFollow(this.player);
         this.cameras.main.setLerp(cameraConfig.lerp.x, cameraConfig.lerp.y);
 
@@ -662,7 +662,7 @@ export class Game extends Scene implements IGameScene
         this.physics.world.pause();
         
         // Fade out effect using configuration
-        const cameraConfig = this.gameConfig.getCameraConfig();
+        const cameraConfig = this.configManager.getCameraConfig();
         this.cameras.main.fadeOut(cameraConfig.fadeOutDuration, 0, 0, 0);
         
         this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
@@ -690,7 +690,7 @@ export class Game extends Scene implements IGameScene
         this.physics.world.pause();
         
         // Fade out effect using configuration
-        const cameraConfig = this.gameConfig.getCameraConfig();
+        const cameraConfig = this.configManager.getCameraConfig();
         this.cameras.main.fadeOut(cameraConfig.fadeInDuration, 255, 255, 255);
         
         this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {

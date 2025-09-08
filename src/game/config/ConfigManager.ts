@@ -1,5 +1,68 @@
 import { SingletonManager } from '../core/BaseManager';
 
+export interface PlayerConfig {
+    moveSpeed: number;
+    health: number;
+    maxHealth: number;
+    invulnerabilityDuration: number;
+    knockbackForce: { x: number; y: number };
+    collisionSize: { width: number; height: number; offsetX: number; offsetY: number };
+}
+
+export interface BulletConfig {
+    speed: number;
+    lifetime: number;
+    poolSize: number;
+    maxPoolSize: number;
+    defaultType: string;
+}
+
+export interface EnemySpawnConfig {
+    spawnInterval: number;
+    maxEnemies: number;
+    spawnDistance: number;
+    initialEnemyCount: number;
+    enemyWeights: Array<{ type: string; weight: number }>;
+}
+
+export interface EnemyStatsConfig {
+    [key: string]: {
+        moveSpeed: number;
+        health: number;
+        damage: number;
+        scale: number;
+        trackingDistance: number;
+        speedBoostDistance: number;
+        speedBoostMultiplier: number;
+    };
+}
+
+export interface UIConfig {
+    healthUI: { x: number; y: number };
+    scoreUI: { x: number; y: number; fontSize: string };
+    weaponUI: { x: number; y: number; fontSize: string };
+    instructionUI: { x: number; y: number; fontSize: string };
+    colors: {
+        text: string;
+        stroke: string;
+        weaponText: string;
+    };
+    strokeThickness: number;
+    depth: number;
+}
+
+export interface PhysicsConfig {
+    gravity: { x: number; y: number };
+    bounce: number;
+    debug: boolean;
+}
+
+export interface CameraConfig {
+    lerp: { x: number; y: number };
+    fadeOutDuration: number;
+    fadeInDuration: number;
+}
+
 export interface GameSettings {
     // Display settings
     display: {
@@ -40,6 +103,21 @@ export interface GameSettings {
         animationQuality: 'low' | 'medium' | 'high';
         maxEnemies: number;
         maxBullets: number;
+    };
+    
+    // Game configuration
+    player: PlayerConfig;
+    bullet: BulletConfig;
+    enemySpawn: EnemySpawnConfig;
+    enemyStats: EnemyStatsConfig;
+    ui: UIConfig;
+    physics: PhysicsConfig;
+    camera: CameraConfig;
+    debug: {
+        enableLogging: boolean;
+        showBulletDebug: boolean;
+        showCollisionBounds: boolean;
+        logFrameRate: boolean;
     };
 }
 
@@ -158,6 +236,90 @@ export class ConfigManager extends SingletonManager {
                 animationQuality: 'medium',
                 maxEnemies: 15,
                 maxBullets: 50
+            },
+            player: {
+                moveSpeed: 150,
+                health: 3,
+                maxHealth: 3,
+                invulnerabilityDuration: 800,
+                knockbackForce: { x: 200, y: -100 },
+                collisionSize: { width: 0.7, height: 0.7, offsetX: 0.15, offsetY: 0.15 }
+            },
+            bullet: {
+                speed: 400,
+                lifetime: 3000,
+                poolSize: 20,
+                maxPoolSize: 50,
+                defaultType: 'bullets1'
+            },
+            enemySpawn: {
+                spawnInterval: 1500,
+                maxEnemies: 15,
+                spawnDistance: 400,
+                initialEnemyCount: 3,
+                enemyWeights: [
+                    { type: 'slime', weight: 50 },
+                    { type: 'flying_creature', weight: 30 },
+                    { type: 'goblin', weight: 20 }
+                ]
+            },
+            enemyStats: {
+                flying_creature: {
+                    moveSpeed: 120,
+                    health: 2,
+                    damage: 1,
+                    scale: 3.0,
+                    trackingDistance: 1000,
+                    speedBoostDistance: 200,
+                    speedBoostMultiplier: 1.2
+                },
+                goblin: {
+                    moveSpeed: 140,
+                    health: 3,
+                    damage: 2,
+                    scale: 3.0,
+                    trackingDistance: 1000,
+                    speedBoostDistance: 200,
+                    speedBoostMultiplier: 1.2
+                },
+                slime: {
+                    moveSpeed: 100,
+                    health: 1,
+                    damage: 1,
+                    scale: 3.0,
+                    trackingDistance: 1000,
+                    speedBoostDistance: 200,
+                    speedBoostMultiplier: 1.2
+                }
+            },
+            ui: {
+                healthUI: { x: 50, y: 50 },
+                scoreUI: { x: 50, y: 100, fontSize: '24px' },
+                weaponUI: { x: 50, y: 160, fontSize: '18px' },
+                instructionUI: { x: 50, y: 130, fontSize: '18px' },
+                colors: {
+                    text: '#ffffff',
+                    stroke: '#000000',
+                    weaponText: '#ffff00'
+                },
+                strokeThickness: 4,
+                depth: 1000
+            },
+            physics: {
+                gravity: { x: 0, y: 0 },
+                bounce: 0.1,
+                debug: false
+            },
+            camera: {
+                lerp: { x: 0.1, y: 0.1 },
+                fadeOutDuration: 250,
+                fadeInDuration: 500
+            },
+            debug: {
+                enableLogging: false,
+                showBulletDebug: false,
+                showCollisionBounds: false,
+                logFrameRate: false
             }
         };
     }
@@ -221,12 +383,20 @@ export class ConfigManager extends SingletonManager {
         }
         
         // Check for Node.js environment
-        if (typeof process !== 'undefined' && process.env) {
-            if (process.env.NODE_ENV === 'test') {
-                return 'test';
-            }
-            if (process.env.NODE_ENV === 'development') {
-                return 'development';
+        if (typeof window === 'undefined') {
+            // We're likely in Node.js environment
+            try {
+                // Use any to avoid TypeScript errors in browser build
+                const globalVar = (globalThis as any);
+                const nodeEnv = globalVar.process?.env?.NODE_ENV;
+                if (nodeEnv === 'test') {
+                    return 'test';
+                }
+                if (nodeEnv === 'development') {
+                    return 'development';
+                }
+            } catch {
+                // Ignore errors in case process is not available
             }
         }
         
@@ -383,5 +553,83 @@ export class ConfigManager extends SingletonManager {
     public resetSettings(): void {
         this.settings = this.getDefaultSettings();
         this.saveSettings();
+    }
+    
+    // Game configuration getters (for GameConfig compatibility)
+    public getPlayerConfig(): PlayerConfig {
+        return { ...this.settings.player };
+    }
+    
+    public getBulletConfig(): BulletConfig {
+        return { ...this.settings.bullet };
+    }
+    
+    public getEnemySpawnConfig(): EnemySpawnConfig {
+        return { ...this.settings.enemySpawn };
+    }
+    
+    public getEnemyStatsConfig(): EnemyStatsConfig {
+        return { ...this.settings.enemyStats };
+    }
+    
+    public getUIConfig(): UIConfig {
+        return { ...this.settings.ui };
+    }
+    
+    public getPhysicsConfig(): PhysicsConfig {
+        return { ...this.settings.physics };
+    }
+    
+    public getCameraConfig(): CameraConfig {
+        return { ...this.settings.camera };
+    }
+    
+    public getDebugConfig() {
+        return { ...this.settings.debug };
+    }
+    
+    // Game configuration update methods
+    public updatePlayerConfig(updates: Partial<PlayerConfig>): void {
+        this.settings.player = { ...this.settings.player, ...updates };
+        this.saveSettings();
+    }
+    
+    public updateBulletConfig(updates: Partial<BulletConfig>): void {
+        this.settings.bullet = { ...this.settings.bullet, ...updates };
+        this.saveSettings();
+    }
+    
+    public updateEnemySpawnConfig(updates: Partial<EnemySpawnConfig>): void {
+        this.settings.enemySpawn = { ...this.settings.enemySpawn, ...updates };
+        this.saveSettings();
+    }
+    
+    public updateDebugConfig(updates: Partial<typeof this.settings.debug>): void {
+        this.settings.debug = { ...this.settings.debug, ...updates };
+        this.saveSettings();
+    }
+    
+    // Legacy compatibility methods
+    public getFullConfig(): GameSettings {
+        return { ...this.settings };
+    }
+    
+    public loadConfig(externalConfig: Partial<GameSettings>): void {
+        this.settings = { ...this.settings, ...externalConfig };
+        this.saveSettings();
+    }
+    
+    public exportConfig(): string {
+        return JSON.stringify(this.settings, null, 2);
+    }
+    
+    public importConfig(jsonConfig: string): void {
+        try {
+            const importedConfig = JSON.parse(jsonConfig);
+            this.settings = this.mergeDeep(this.getDefaultSettings(), importedConfig);
+            this.saveSettings();
+        } catch (error) {
+            console.error('Failed to import config:', error);
+        }
     }
 }

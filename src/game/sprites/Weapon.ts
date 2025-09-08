@@ -1,6 +1,6 @@
 import { Scene } from 'phaser';
 import { OptimizedBullet } from './OptimizedBullet';
-import { GameConfig } from '../config/GameConfig';
+import { ConfigManager } from '../config/ConfigManager';
 import { IWeapon } from '../types/GameTypes';
 
 export class Weapon extends Phaser.GameObjects.Sprite implements IWeapon {
@@ -9,7 +9,7 @@ export class Weapon extends Phaser.GameObjects.Sprite implements IWeapon {
     private isShooting: boolean = false;
     private shootCooldown: number = 0;
     private shootCooldownTime: number;
-    private gameConfig: GameConfig;
+    private configManager: ConfigManager;
     
     // 所有可用武器列表
     private static readonly ALL_WEAPONS: string[] = [
@@ -47,7 +47,7 @@ export class Weapon extends Phaser.GameObjects.Sprite implements IWeapon {
         this.weaponType = parts[0];
         
         // 初始化配置
-        this.gameConfig = GameConfig.getInstance();
+        this.configManager = ConfigManager.getInstance();
         this.shootCooldownTime = 500; // 默认值，可以从配置中获取
         
         scene.add.existing(this);
@@ -198,7 +198,7 @@ export class Weapon extends Phaser.GameObjects.Sprite implements IWeapon {
             gameScene.bullets.add(bullet);
             
             // 只在调试模式下输出日志
-            const debugConfig = this.gameConfig.getDebugConfig();
+            const debugConfig = this.configManager.getDebugConfig();
             if (debugConfig.enableLogging) {
                 // 子弹已添加到池中
             }

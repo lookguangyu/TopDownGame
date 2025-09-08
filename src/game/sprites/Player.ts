@@ -1,7 +1,7 @@
 import { AnimationManager } from '../managers/AnimationManager';
 import { Weapon } from './Weapon';
 import { InputManager } from '../managers/InputManager';
-import { GameConfig } from '../config/GameConfig';
+import { ConfigManager } from '../config/ConfigManager';
 import type { IPlayer, IWeapon } from '../types/GameTypes';
 
 export class Player extends Phaser.Physics.Arcade.Sprite implements IPlayer {
@@ -18,7 +18,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements IPlayer {
     // Managers
     private animationManager: AnimationManager;
     private inputManager: InputManager;
-    private gameConfig: GameConfig;
+    private configManager: ConfigManager;
     
     // Movement state
     private isMoving: boolean = false;
@@ -35,7 +35,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements IPlayer {
         super(scene, x, y, key);
 
         // 初始化管理器和配置
-        this.gameConfig = GameConfig.getInstance();
+        this.configManager = ConfigManager.getInstance();
         this.animationManager = AnimationManager.getInstance();
         this.inputManager = new InputManager(scene);
         
@@ -55,7 +55,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements IPlayer {
     }
     
     private setupFromConfig(): void {
-        const playerConfig = this.gameConfig.getPlayerConfig();
+        const playerConfig = this.configManager.getPlayerConfig();
         this.moveSpeed = playerConfig.moveSpeed;
         this.health = playerConfig.health;
         this.maxHealth = playerConfig.maxHealth;
@@ -64,8 +64,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements IPlayer {
     private setupPhysicsAndDisplay(tiledObject: Phaser.Types.Tilemaps.TiledObject): void {
         const texture = this.scene.textures.get(this.key);
         const firstFrame = (texture.frames as any)[texture.firstFrame];
-        const playerConfig = this.gameConfig.getPlayerConfig();
-        const physicsConfig = this.gameConfig.getPhysicsConfig();
+        const playerConfig = this.configManager.getPlayerConfig();
+        const physicsConfig = this.configManager.getPhysicsConfig();
 
         const displayWidth = tiledObject.width ?? firstFrame.width;
         const displayHeight = tiledObject.height ?? firstFrame.height;
@@ -229,7 +229,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements IPlayer {
         this.playAnimation('hit');
         
         // 使用配置文件中的击退力度
-        const playerConfig = this.gameConfig.getPlayerConfig();
+        const playerConfig = this.configManager.getPlayerConfig();
         const knockbackX = this.flipX ? -playerConfig.knockbackForce.x : playerConfig.knockbackForce.x;
         const knockbackY = playerConfig.knockbackForce.y;
         this.setVelocity(knockbackX, knockbackY);
