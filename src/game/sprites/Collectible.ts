@@ -1,4 +1,5 @@
 import { Scene } from 'phaser';
+import { ConfigManager } from '../config/ConfigManager';
 import type { CollectibleProperties, ExtendedTiledObject } from '../types/GameTypes';
 
 /**
@@ -22,6 +23,7 @@ export class Collectible extends Phaser.Physics.Arcade.Sprite {
     private shouldRotate: boolean = false;
     private particleColor: number = 0xFFFFFF;
     private properties: CollectibleProperties = {};
+    private configManager: ConfigManager;
 
     constructor(scene: Scene, collectibleObject: Phaser.Types.Tilemaps.TiledObject) {
         const x = collectibleObject.x || 0;
@@ -30,6 +32,8 @@ export class Collectible extends Phaser.Physics.Arcade.Sprite {
         
         super(scene, x, y - 32, texture);
         
+        this.configManager = ConfigManager.getInstance();
+        
         scene.add.existing(this);
         scene.physics.add.existing(this, true);
         
@@ -37,14 +41,32 @@ export class Collectible extends Phaser.Physics.Arcade.Sprite {
         this.collectibleName = collectibleObject.name || 'collectible';
         this.collectibleType = 'misc'; // Default type
         
-        this.setSize(40, 40);
-        this.setOffset(12, 12);
+        // 使用统一配置设置收集品属性
+        this.setupFromConfig();
         
         // Extract properties from the tilemap object
         this.extractProperties(collectibleObject);
         
         this.createAnimations();
         this.playIdleAnimation();
+    }
+    
+    private setupFromConfig(): void {
+        const collectibleConfig = this.configManager.getElementConfig('collectible');
+        
+        // 使用统一标准配置设置收集品属性
+        this.setScale(collectibleConfig.scale);
+        this.setDepth(collectibleConfig.zDepth);
+        
+        // 使用统一配置设置碰撞体
+        const collisionWidth = collectibleConfig.baseSize.width * collectibleConfig.collisionScale;
+        const collisionHeight = collectibleConfig.baseSize.height * collectibleConfig.collisionScale;
+        this.setSize(collisionWidth, collisionHeight);
+        
+        // 计算偏移量以居中碰撞体
+        const offsetX = (collectibleConfig.baseSize.width - collisionWidth) / 2;
+        const offsetY = (collectibleConfig.baseSize.height - collisionHeight) / 2;
+        this.setOffset(offsetX, offsetY);
     }
     
     private extractProperties(collectibleObject: Phaser.Types.Tilemaps.TiledObject): void {

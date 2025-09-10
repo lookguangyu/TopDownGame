@@ -1,4 +1,3 @@
-import { Scene } from 'phaser';
 import { BattleEnemy, EnemyType } from '../sprites/BattleEnemy';
 import { SingletonManager } from '../core/BaseManager';
 import { eventBus, GameEvent } from '../events/EventBus';
@@ -22,12 +21,35 @@ export class EnemySpawner extends SingletonManager {
     
     protected onInitialize(): void {
         // EnemySpawner specific initialization
-        // 创建敌人组
+        // 每次初始化都重新创建敌人组（解决场景重启问题）
+        if (this.enemies) {
+            try {
+                // 检查group是否仍然有效
+                if (this.enemies.children && typeof this.enemies.clear === 'function') {
+                    this.enemies.clear(true, true);
+                } else {
+                    console.warn('[EnemySpawner] Existing enemies group is corrupted, will recreate');
+                }
+            } catch (error) {
+                console.warn('[EnemySpawner] Error clearing existing enemies during init:', error);
+            }
+        }
+        
+        // 总是创建新的敌人组
         this.enemies = this.getScene().physics.add.group({
             classType: BattleEnemy,
             runChildUpdate: true,
             maxSize: this.maxEnemies
         });
+        
+        console.log('[EnemySpawner] Enemies group created with', this.maxEnemies, 'max size');
+    }
+    
+    protected onCleanup(): void {
+        console.log('[EnemySpawner] Cleaning up...');
+        this.stop();
+        this.clearAllEnemies();
+        this.player = null as any;
     }
     
     public setPlayer(player: Phaser.Physics.Arcade.Sprite): void {
@@ -42,6 +64,8 @@ export class EnemySpawner extends SingletonManager {
     
     start(): void {
         this.ensurePlayerSet();
+        
+        console.log('[EnemySpawner] Starting enemy spawning...');
         
         // 立即生成一些初始敌人
         for (let i = 0; i < 3; i++) {
@@ -71,6 +95,12 @@ export class EnemySpawner extends SingletonManager {
     
     private spawnEnemy(): void {
         this.ensurePlayerSet();
+        
+        // 确保敌人组已初始化
+        if (!this.enemies) {
+            console.warn('[EnemySpawner] Cannot spawn enemy: enemies group not initialized');
+            return;
+        }
         
         // 检查敌人数量限制
         if (this.enemies.children.size >= this.maxEnemies) {
@@ -169,8 +199,23 @@ export class EnemySpawner extends SingletonManager {
     
     // 清除所有敌人
     clearAllEnemies(): void {
-        this.enemies.clear(true, true);
-
+        if (this.enemies && this.enemies.children) {
+            try {
+                this.enemies.clear(true, true);
+            } catch (error) {
+                console.warn('[EnemySpawner] Error clearing enemies, recreating group:', error);
+                // 如果清理失败，强制重新创建
+                this.enemies = null as any;
+            }
+        }
+    }
+    
+    // 重置敌人生成器（用于游戏重启）
+    reset(): void {
+        console.log('[EnemySpawner] Resetting...');
+        this.onCleanup();
+        // 重置初始化状态，允许重新初始化
+        this.initialized = false;
     }
     
     // 更新生成配置
@@ -202,6 +247,6 @@ export class EnemySpawner extends SingletonManager {
     
     // 获取当前敌人数量
     getEnemyCount(): number {
-        return this.enemies.children.size;
+        return this.enemies ? this.enemies.children.size : 0;
     }
 }

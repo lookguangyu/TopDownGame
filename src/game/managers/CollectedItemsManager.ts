@@ -1,4 +1,5 @@
 import type { CollectibleProperties } from '../types/GameTypes';
+import { SingletonManager } from '../core/BaseManager';
 
 export interface CollectedItemData {
     name: string;           // Item name (texture key)
@@ -8,13 +9,17 @@ export interface CollectedItemData {
     properties: CollectibleProperties;       // Additional properties
 }
 
-export class CollectedItemsManager {
+export class CollectedItemsManager extends SingletonManager {
     private items: Map<string, CollectedItemData> = new Map();
     private totalScore: number = 0;
     private mustCollectItems: Set<string> = new Set();
     private collectedMustHaveItems: Set<string> = new Set();
     
     constructor() {
+        super();
+    }
+    
+    protected onInitialize(): void {
         this.reset();
     }
     

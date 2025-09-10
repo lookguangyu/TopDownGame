@@ -52,10 +52,11 @@ export class Weapon extends Phaser.GameObjects.Sprite implements IWeapon {
         
         scene.add.existing(this);
         
-        // 设置武器显示属性 - 32x32帧缩放2.0倍 = 64x64显示尺寸
-        this.setScale(2.0); // 稍微增大武器，更容易看清且更有存在感
+        // 使用统一标准配置设置武器属性
+        const weaponStandardConfig = this.configManager.getWeaponStandardConfig();
+        this.setScale(weaponStandardConfig.scale);
         this.setOrigin(0.25, 0.5); // 设置原点在武器手柄位置（左侧1/4处），让武器围绕手柄旋转
-        this.setDepth(10); // 高深度确保在最前面
+        this.setDepth(weaponStandardConfig.zDepth);
         this.setAlpha(1.0); // 完全不透明
         this.setVisible(true); // 确保可见
         

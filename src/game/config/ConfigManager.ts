@@ -63,6 +63,23 @@ export interface CameraConfig {
     fadeInDuration: number;
 }
 
+export interface GameElementConfig {
+    baseSize: { width: number; height: number };
+    scale: number;
+    finalSize: { width: number; height: number };
+    collisionScale: number;
+    zDepth: number;
+}
+
+export interface StandardSizesConfig {
+    tile: GameElementConfig;
+    enemy: GameElementConfig;
+    player: GameElementConfig;
+    weapon: GameElementConfig;
+    bullet: GameElementConfig;
+    collectible: GameElementConfig;
+}
+
 export interface GameSettings {
     // Display settings
     display: {
@@ -71,6 +88,9 @@ export interface GameSettings {
         fullscreen: boolean;
         scale: number;
     };
+    
+    // Unified game element standards
+    standardSizes: StandardSizesConfig;
     
     // Audio settings
     audio: {
@@ -122,6 +142,13 @@ export interface GameSettings {
 }
 
 export interface GameConstants {
+    // Tilemap constants
+    tilemap: {
+        baseSize: { width: number; height: number };
+        scale: number;
+        finalSize: { width: number; height: number };
+    };
+    
     // Physics constants
     physics: {
         gravity: { x: number; y: number };
@@ -203,6 +230,50 @@ export class ConfigManager extends SingletonManager {
                 height: 768,
                 fullscreen: false,
                 scale: 1.0
+            },
+            standardSizes: {
+                tile: {
+                    baseSize: { width: 16, height: 16 },
+                    scale: 4.0,
+                    finalSize: { width: 64, height: 64 },
+                    collisionScale: 1.0,
+                    zDepth: 1
+                },
+                enemy: {
+                    baseSize: { width: 16, height: 16 },
+                    scale: 4.0,
+                    finalSize: { width: 64, height: 64 },
+                    collisionScale: 0.75, // 略小的碰撞体积
+                    zDepth: 5
+                },
+                player: {
+                    baseSize: { width: 16, height: 16 },
+                    scale: 4.0,
+                    finalSize: { width: 64, height: 64 },
+                    collisionScale: 0.7,
+                    zDepth: 10
+                },
+                weapon: {
+                    baseSize: { width: 32, height: 32 },
+                    scale: 2.0,
+                    finalSize: { width: 64, height: 64 },
+                    collisionScale: 0.8,
+                    zDepth: 15  // 武器应该在玩家前面
+                },
+                bullet: {
+                    baseSize: { width: 8, height: 8 },
+                    scale: 2.0,
+                    finalSize: { width: 16, height: 16 },
+                    collisionScale: 0.6,
+                    zDepth: 6
+                },
+                collectible: {
+                    baseSize: { width: 16, height: 16 },
+                    scale: 3.0,
+                    finalSize: { width: 48, height: 48 },
+                    collisionScale: 0.8,
+                    zDepth: 3
+                }
             },
             audio: {
                 masterVolume: 1.0,
@@ -329,6 +400,11 @@ export class ConfigManager extends SingletonManager {
      */
     private getDefaultConstants(): GameConstants {
         return {
+            tilemap: {
+                baseSize: { width: 16, height: 16 },
+                scale: 4,
+                finalSize: { width: 64, height: 64 }
+            },
             physics: {
                 gravity: { x: 0, y: 0 },
                 worldBounds: { width: 1024, height: 768 },
@@ -586,6 +662,37 @@ export class ConfigManager extends SingletonManager {
     
     public getDebugConfig() {
         return { ...this.settings.debug };
+    }
+    
+    // Standard sizes configuration methods
+    public getStandardSizes(): StandardSizesConfig {
+        return { ...this.settings.standardSizes };
+    }
+    
+    public getElementConfig(elementType: keyof StandardSizesConfig): GameElementConfig {
+        return { ...this.settings.standardSizes[elementType] };
+    }
+    
+    // Helper methods for common element configurations
+    public getEnemyStandardConfig(): GameElementConfig {
+        return this.getElementConfig('enemy');
+    }
+    
+    public getPlayerStandardConfig(): GameElementConfig {
+        return this.getElementConfig('player');
+    }
+    
+    public getWeaponStandardConfig(): GameElementConfig {
+        return this.getElementConfig('weapon');
+    }
+    
+    public getBulletStandardConfig(): GameElementConfig {
+        return this.getElementConfig('bullet');
+    }
+    
+    // Tilemap configuration methods
+    public getTilemapConstants() {
+        return this.getConstant('tilemap');
     }
     
     // Game configuration update methods

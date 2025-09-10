@@ -4,7 +4,6 @@ import { StaticHazard } from '../sprites/StaticHazard';
 
 
 import { Collectible } from '../sprites/Collectible';
-import { Enemy } from '../sprites/Enemy';
 import { BattleEnemy } from '../sprites/BattleEnemy';
 import { OptimizedBullet } from '../sprites/OptimizedBullet';
 import { HealthUI } from '../ui/HealthUI';
@@ -28,7 +27,6 @@ export class Game extends Scene implements IGameScene
     hazards: Phaser.Physics.Arcade.StaticGroup;
 
     collectibles: Phaser.Physics.Arcade.StaticGroup;
-    enemies: Phaser.Physics.Arcade.Group;
     battleEnemies: Phaser.Physics.Arcade.Group;
     bullets: Phaser.Physics.Arcade.Group;
     enemySpawner: EnemySpawner;
@@ -58,17 +56,19 @@ export class Game extends Scene implements IGameScene
     constructor ()
     {
         super('Game');
-        this.collectedItemsManager = new CollectedItemsManager();
+        this.collectedItemsManager = CollectedItemsManager.getInstance();
         this.configManager = ConfigManager.getInstance();
         this.objectPoolManager = ObjectPoolManager.getInstance();
+        
+        // 对于GameStateManager，只获取实例，不重新初始化
         this.gameStateManager = GameStateManager.getInstance();
+        if (!this.gameStateManager.isInitialized()) {
+            this.gameStateManager.initialize(this);
+        }
     }
 
     create ()
     {
-        // Initialize managers
-        this.gameStateManager.initialize(this);
-        
         // Emit scene start event
         eventBus.emit(GameEvent.SCENE_START, { scene: 'Game' });
         
@@ -117,8 +117,9 @@ export class Game extends Scene implements IGameScene
                 this.layers.push(layer);
                 layer.setCollisionByProperty({ collides: true });
                 
-                // Scale the layer to make 16x16 tiles display as 64x64
-                layer.setScale(4, 4); // 16 * 4 = 64
+                // 使用统一配置的tilemap缩放
+                const tilemapConfig = this.configManager.getTilemapConstants();
+                layer.setScale(tilemapConfig.scale, tilemapConfig.scale);
                 
                 // Ensure layer is visible
                 //layer.setVisible(true);
@@ -234,7 +235,12 @@ export class Game extends Scene implements IGameScene
                 this.createCollectibleFromTilemap(obj);
                 return
             case "enemy":
-                this.createEnemyFromTilemap(obj);
+                // 旧敌人系统已移除，所有敌人都通过EnemySpawner动态生成
+                console.warn("Tilemap enemy objects are deprecated. Use EnemySpawner for all enemies.");
+                return
+            case "goal":
+                // Goal对象已移除，忽略tilemap中的goal对象
+                console.log("Goal objects are no longer needed, skipping:", obj.name);
                 return
             default:
                 console.log("unknown object type", obj.type);
@@ -259,9 +265,10 @@ export class Game extends Scene implements IGameScene
         });
 
         // Set camera bounds to match the scaled tilemap size
-        // 16x12 tiles * 16 pixels * 4 scale = 1024x768 pixels
-        const scaledWidth = this.map.widthInPixels * 4;
-        const scaledHeight = this.map.heightInPixels * 4;
+        // 使用统一配置的tilemap缩放
+        const tilemapConfig = this.configManager.getTilemapConstants();
+        const scaledWidth = this.map.widthInPixels * tilemapConfig.scale;
+        const scaledHeight = this.map.heightInPixels * tilemapConfig.scale;
         this.cameras.main.setBounds(0, 0, scaledWidth, scaledHeight);
         
         // Make camera follow the player with configured lerp
@@ -301,22 +308,11 @@ export class Game extends Scene implements IGameScene
         }
     }
     
-    private createEnemyFromTilemap(enemyObject: Phaser.Types.Tilemaps.TiledObject) {
-        if (!this.enemies) {
-            this.enemies = this.physics.add.group({
-                classType: Enemy,
-                runChildUpdate: true
-            });
-        }
-        
-        const enemy = new Enemy(this, enemyObject);
-        this.enemies.add(enemy);
-        
-        // Set up collides with tilemap layers
-        this.layers.forEach(layer => {
-            this.physics.add.collider(enemy, layer);
-        });
-    }
+    // 已移除：createGoalFromTilemap 方法
+    // Goal对象不再需要
+    
+    // 已移除：createEnemyFromTilemap 方法
+    // 所有敌人现在都通过 EnemySpawner 动态生成
 
     private createOverleapEvents() {
         // Setup player vs hazards overlap detection
@@ -345,16 +341,10 @@ export class Game extends Scene implements IGameScene
             );
         }
         
-        // Setup player vs enemies overlap detection
-        if (this.player && this.enemies) {
-            this.physics.add.overlap(
-                this.player,
-                this.enemies,
-                this.handlePlayerEnemyCollision,
-                undefined,
-                this
-            );
-        }
+        // 已移除：Goal碰撞检测
+        // Goal对象不再需要
+        
+        // 已移除：旧敌人系统的碰撞检测
         
         // Setup player vs battle enemies overlap detection
         if (this.player && this.battleEnemies && this.battleEnemies.children) {
@@ -420,18 +410,11 @@ export class Game extends Scene implements IGameScene
         this.updateScoreDisplay();
     }
     
-    private handlePlayerEnemyCollision(player: any, enemy: any): void {
-        const enemyInstance = enemy as Enemy;
-        const playerInstance = player as Player;
-        
-        // 在俯视角游戏中，敌人直接伤害玩家
-        playerInstance.takeDamage(enemyInstance.getDamage());
-        
-        // Update health UI
-        if (this.healthUI) {
-            this.healthUI.updateHealth(playerInstance.getHealth());
-        }
-    }
+    // 已移除：handlePlayerGoalCollision 方法
+    // Goal对象不再需要
+    
+    // 已移除：handlePlayerEnemyCollision 方法
+    // 现在只使用 handlePlayerBattleEnemyCollision
     
     private updateScoreDisplay() {
         if (this.scoreText) {
@@ -556,18 +539,25 @@ export class Game extends Scene implements IGameScene
             classType: OptimizedBullet,
             runChildUpdate: true, // 确保子弹的update方法被调用
             maxSize: 50, // 最大子弹数量
-            createCallback: (bullet: Phaser.GameObjects.GameObject) => {
-
+            createCallback: (_bullet: Phaser.GameObjects.GameObject) => {
+                // 子弹创建时的回调（暂无需处理）
             },
-            removeCallback: (bullet: Phaser.GameObjects.GameObject) => {
-
+            removeCallback: (_bullet: Phaser.GameObjects.GameObject) => {
+                // 子弹移除时的回调（暂无需处理）
             }
         });
         
         // 初始化敌人生成器
         if (this.player) {
             this.enemySpawner = EnemySpawner.getInstance();
-            this.enemySpawner.initialize(this);
+            // 对于游戏重启，强制重新初始化
+            if (this.enemySpawner.isInitialized()) {
+                console.log('[Game] Reinitializing EnemySpawner for scene restart');
+                this.enemySpawner.forceReinitialize(this);
+            } else {
+                console.log('[Game] First time initializing EnemySpawner');
+                this.enemySpawner.initialize(this);
+            }
             this.enemySpawner.setPlayer(this.player);
             this.battleEnemies = this.enemySpawner.getEnemies();
             
@@ -766,9 +756,9 @@ export class Game extends Scene implements IGameScene
             this.objectPoolManager.clearAllPools();
         }
         
-        // 停止敌人生成器
+        // 重置敌人生成器
         if (this.enemySpawner) {
-            this.enemySpawner.stop();
+            this.enemySpawner.reset();
         }
         
         // 清理玩家资源
@@ -785,15 +775,15 @@ export class Game extends Scene implements IGameScene
         if (this.bullets) {
             this.bullets.clear(true, true);
         }
-        if (this.enemies) {
-            this.enemies.clear(true, true);
-        }
+        // 已移除：旧敌人系统清理
         if (this.battleEnemies) {
             this.battleEnemies.clear(true, true);
         }
         if (this.collectibles) {
             this.collectibles.clear(true, true);
         }
+        // 已移除：Goal组清理
+        // Goal对象不再需要
         if (this.hazards) {
             this.hazards.clear(true, true);
         }

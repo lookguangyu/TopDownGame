@@ -62,29 +62,22 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements IPlayer {
     }
     
     private setupPhysicsAndDisplay(tiledObject: Phaser.Types.Tilemaps.TiledObject): void {
-        const texture = this.scene.textures.get(this.key);
-        const firstFrame = (texture.frames as any)[texture.firstFrame];
-        const playerConfig = this.configManager.getPlayerConfig();
+        const playerStandardConfig = this.configManager.getPlayerStandardConfig();
         const physicsConfig = this.configManager.getPhysicsConfig();
 
-        const displayWidth = tiledObject.width ?? firstFrame.width;
-        const displayHeight = tiledObject.height ?? firstFrame.height;
-
-        const xScale = displayWidth / firstFrame.width;
-        const yScale = displayHeight / firstFrame.height;
+        // 使用统一标准配置设置缩放
+        this.setScale(playerStandardConfig.scale);
+        this.setDepth(playerStandardConfig.zDepth);
         
-        this.setScale(xScale, yScale);
+        // 使用统一标准配置设置碰撞体
+        const collisionWidth = playerStandardConfig.baseSize.width * playerStandardConfig.collisionScale;
+        const collisionHeight = playerStandardConfig.baseSize.height * playerStandardConfig.collisionScale;
+        this.setSize(collisionWidth, collisionHeight);
         
-        // 使用配置文件中的碰撞体设置
-        const collisionSize = playerConfig.collisionSize;
-        this.setSize(
-            firstFrame.width * collisionSize.width, 
-            firstFrame.height * collisionSize.height
-        );
-        this.setOffset(
-            firstFrame.width * collisionSize.offsetX, 
-            firstFrame.height * collisionSize.offsetY
-        );
+        // 计算偏移量以居中碰撞体
+        const offsetX = (playerStandardConfig.baseSize.width - collisionWidth) / 2;
+        const offsetY = (playerStandardConfig.baseSize.height - collisionHeight) / 2;
+        this.setOffset(offsetX, offsetY);
         
         this.setCollideWorldBounds(true);
         this.setBounce(physicsConfig.bounce);

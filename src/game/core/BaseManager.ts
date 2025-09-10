@@ -34,6 +34,24 @@ export abstract class BaseManager {
     }
     
     /**
+     * Force re-initialization (useful for scene restarts)
+     */
+    public forceReinitialize(scene: Scene): void {
+        // 先进行清理
+        this.onCleanup();
+        // 然后重新初始化
+        this.scene = scene;
+        this.onInitialize();
+    }
+    
+    /**
+     * Check if manager is initialized
+     */
+    public isInitialized(): boolean {
+        return this.initialized && this.scene !== null;
+    }
+    
+    /**
      * Called when the manager is initialized
      * Override in subclasses for custom initialization logic
      */
@@ -58,12 +76,6 @@ export abstract class BaseManager {
         // Override in subclasses
     }
     
-    /**
-     * Check if manager is properly initialized
-     */
-    public isInitialized(): boolean {
-        return this.initialized && this.scene !== null;
-    }
     
     /**
      * Get the current scene

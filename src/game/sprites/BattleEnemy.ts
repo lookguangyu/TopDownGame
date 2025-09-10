@@ -1,4 +1,5 @@
 import { Scene } from 'phaser';
+import { ConfigManager } from '../config/ConfigManager';
 
 export type EnemyType = 'flying_creature' | 'goblin' | 'slime';
 
@@ -12,11 +13,13 @@ export class BattleEnemy extends Phaser.Physics.Arcade.Sprite {
     private damage: number;
     private player: Phaser.Physics.Arcade.Sprite | null = null;
     private isDestroyed: boolean = false;
+    private configManager: ConfigManager;
     
     constructor(scene: Scene, x: number, y: number, enemyType: EnemyType) {
         super(scene, x, y, enemyType);
         
         this.enemyType = enemyType;
+        this.configManager = ConfigManager.getInstance();
         
         // 根据敌人类型设置属性
         this.setupEnemyStats();
@@ -24,17 +27,8 @@ export class BattleEnemy extends Phaser.Physics.Arcade.Sprite {
         scene.add.existing(this);
         scene.physics.add.existing(this);
         
-        // 设置物理属性
-        this.setCollideWorldBounds(true);
-        this.setBounce(0.2);
-        
-        // 设置碰撞体积
-        this.setSize(12, 12);
-        this.setOffset(2, 2);
-        
-        // 设置缩放和深度
-        this.setScale(3.0); // 放大敌人使其更加清晰可见
-        this.setDepth(5);
+        // 使用统一配置设置敌人属性
+        this.setupEnemyFromConfig();
         
         // 播放移动动画
         this.play(`${enemyType}_move`);
@@ -62,6 +56,28 @@ export class BattleEnemy extends Phaser.Physics.Arcade.Sprite {
         }
         this.moveSpeed = this.baseMoveSpeed;
         this.maxHealth = this.health;
+    }
+    
+    private setupEnemyFromConfig(): void {
+        const enemyConfig = this.configManager.getEnemyStandardConfig();
+        
+        // 设置物理属性
+        this.setCollideWorldBounds(true);
+        this.setBounce(0.2);
+        
+        // 使用统一配置设置碰撞体积
+        const collisionWidth = enemyConfig.baseSize.width * enemyConfig.collisionScale;
+        const collisionHeight = enemyConfig.baseSize.height * enemyConfig.collisionScale;
+        this.setSize(collisionWidth, collisionHeight);
+        
+        // 计算偏移量以居中碰撞体
+        const offsetX = (enemyConfig.baseSize.width - collisionWidth) / 2;
+        const offsetY = (enemyConfig.baseSize.height - collisionHeight) / 2;
+        this.setOffset(offsetX, offsetY);
+        
+        // 使用统一配置设置缩放和深度
+        this.setScale(enemyConfig.scale);
+        this.setDepth(enemyConfig.zDepth);
     }
     
     setPlayer(player: Phaser.Physics.Arcade.Sprite): void {
@@ -109,10 +125,7 @@ export class BattleEnemy extends Phaser.Physics.Arcade.Sprite {
             this.setFlipX(false);
         }
         
-        // 飞行生物的特殊行为：不受重力影响
-        if (this.enemyType === 'flying_creature' && this.body && 'setGravityY' in this.body) {
-            (this.body as Phaser.Physics.Arcade.Body).setGravityY(-300); // 抵消重力
-        }
+        // 注意：已移除重力系统，所有敌人都采用顶视角移动
     }
     
     takeDamage(damage: number = 1): void {

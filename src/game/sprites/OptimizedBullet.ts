@@ -1,5 +1,6 @@
 import { Scene } from 'phaser';
 import { ObjectPoolManager } from '../managers/ObjectPoolManager';
+import { ConfigManager } from '../config/ConfigManager';
 
 export class OptimizedBullet extends Phaser.Physics.Arcade.Sprite {
     private static readonly POOL_KEY = 'bullets';
@@ -11,6 +12,7 @@ export class OptimizedBullet extends Phaser.Physics.Arcade.Sprite {
     private bulletType: string;
     private lifeTimer: Phaser.Time.TimerEvent | null = null;
     private isInitialized: boolean = false;
+    private configManager: ConfigManager;
     
     constructor(scene: Scene, x: number = 0, y: number = 0) {
         // 使用默认纹理创建，后续会通过reset方法设置具体纹理
@@ -19,6 +21,7 @@ export class OptimizedBullet extends Phaser.Physics.Arcade.Sprite {
         
         this.direction = new Phaser.Math.Vector2(0, 0);
         this.bulletType = 'bullets1';
+        this.configManager = ConfigManager.getInstance();
         
         // 只在第一次创建时进行场景添加
         if (!this.isInitialized) {
@@ -28,6 +31,7 @@ export class OptimizedBullet extends Phaser.Physics.Arcade.Sprite {
         }
         
         this.setupPhysics();
+        this.setupFromConfig();
     }
     
     private setupPhysics(): void {
@@ -35,14 +39,38 @@ export class OptimizedBullet extends Phaser.Physics.Arcade.Sprite {
         if (body) {
             body.setBounce(0);
             body.setCollideWorldBounds(false);
-            body.setGravityY(0);
+            // 注意：已移除重力系统，无需特殊设置
         }
+    }
+    
+    private setupFromConfig(): void {
+        const bulletStandardConfig = this.configManager.getBulletStandardConfig();
+        const bulletConfig = this.configManager.getBulletConfig();
+        
+        // 使用统一标准配置设置子弹属性
+        this.setScale(bulletStandardConfig.scale);
+        this.setDepth(bulletStandardConfig.zDepth);
+        
+        // 使用配置中的速度而不是硬编码
+        this.speed = bulletConfig.speed;
     }
     
     /**
      * 重置子弹状态并配置新的发射参数
      */
     reset(x: number, y: number, direction: Phaser.Math.Vector2, bulletType: string = 'bullets1'): void {
+        // 确保scene完全可用
+        if (!this.scene || !this.scene.textures || !this.scene.time) {
+            console.warn('Scene not ready for bullet reset, deferring activation');
+            // 延迟激活，直到scene准备好
+            setTimeout(() => {
+                if (this.scene && this.scene.textures && this.scene.time) {
+                    this.reset(x, y, direction, bulletType);
+                }
+            }, 50);
+            return;
+        }
+        
         this.setPosition(x, y);
         this.direction = direction.clone().normalize();
         this.bulletType = bulletType;
@@ -68,7 +96,8 @@ export class OptimizedBullet extends Phaser.Physics.Arcade.Sprite {
     private setupAppearance(): void {
         // 确保scene和textures存在
         if (!this.scene || !this.scene.textures) {
-            console.warn('Scene or textures not available for bullet setup');
+            // 跳过设置，子弹将使用默认外观
+            console.warn('Scene or textures not available for bullet setup, using defaults');
             return;
         }
         
@@ -109,12 +138,14 @@ export class OptimizedBullet extends Phaser.Physics.Arcade.Sprite {
         
         // 确保scene和time存在
         if (!this.scene || !this.scene.time) {
+            // 跳过设置生存时间，子弹将永久存在直到手动清理
             console.warn('Scene or time not available for bullet lifetime setup');
             return;
         }
         
         // 设置新的生存时间
-        this.lifeTimer = this.scene.time.delayedCall(OptimizedBullet.DEFAULT_LIFETIME, () => {
+        const bulletConfig = this.configManager.getBulletConfig();
+        this.lifeTimer = this.scene.time.delayedCall(bulletConfig.lifetime, () => {
             this.deactivate();
         });
     }
