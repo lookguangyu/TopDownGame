@@ -2,6 +2,7 @@ import { AnimationManager } from '../managers/AnimationManager';
 import { Weapon } from './Weapon';
 import { InputManager } from '../managers/InputManager';
 import { ConfigManager } from '../config/ConfigManager';
+import { SafetyUtils } from '../utils/SafetyUtils';
 import type { IPlayer, IWeapon } from '../types/GameTypes';
 
 export class Player extends Phaser.Physics.Arcade.Sprite implements IPlayer {
@@ -45,13 +46,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements IPlayer {
         scene.add.existing(this);
         scene.physics.add.existing(this);
 
-        this.setupPhysicsAndDisplay(tiledObject);
+        this.setupPhysicsAndDisplay();
         
         // 创建随机武器
         this.weapon = new Weapon(scene, x, y, 'random');
         
-        // Play initial animation
-        this.playAnimation('idle');
+        // 使用安全的延迟动画播放
+        SafetyUtils.delayedExecution(
+            this.scene,
+            () => this.scene.anims && this.scene.anims.exists('knight_idle'),
+            () => this.playAnimation('idle'),
+            10,
+            100
+        );
     }
     
     private setupFromConfig(): void {
@@ -61,7 +68,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements IPlayer {
         this.maxHealth = playerConfig.maxHealth;
     }
     
-    private setupPhysicsAndDisplay(tiledObject: Phaser.Types.Tilemaps.TiledObject): void {
+    private setupPhysicsAndDisplay(): void {
         const playerStandardConfig = this.configManager.getPlayerStandardConfig();
         const physicsConfig = this.configManager.getPhysicsConfig();
 
@@ -95,9 +102,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite implements IPlayer {
                 animKey = 'knight_idle'; // 默认使用待机动画
             }
             
+            // 使用安全的动画播放
             if (this.currentAnimation !== animKey) {
-                this.play(animKey);
-                this.currentAnimation = animKey;
+                const success = SafetyUtils.safePlayAnimation(this, animKey, this.scene, 'knight_idle');
+                if (success) {
+                    this.currentAnimation = animKey;
+                }
             }
         } else {
             // 原有的动画系统

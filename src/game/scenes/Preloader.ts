@@ -1,15 +1,21 @@
 import { Scene } from 'phaser';
 import { AnimationManager } from '../managers/AnimationManager';
+import { ResourceValidator } from '../managers/ResourceValidator';
 
 export class Preloader extends Scene
 {
     private animationManager: AnimationManager;
+    private resourceValidator: ResourceValidator;
     
     constructor ()
     {
         super('Preloader');
         this.animationManager = AnimationManager.getInstance();
         this.animationManager.initialize(this);
+        this.resourceValidator = ResourceValidator.getInstance(this);
+        
+        // 注册所有游戏资源
+        this.resourceValidator.registerGameResources();
     }
 
     init ()
@@ -35,7 +41,19 @@ export class Preloader extends Scene
     preload ()
     {
         //  Load the assets for the game - Replace with your own assets
+        // 尝试加载logo，如果不存在将使用fallback
         this.load.image('logo', 'assets/logo.png');
+        
+        // 添加错误处理，如果资源加载失败提供fallback
+        this.load.on('loaderror', (file: any) => {
+            if (file.key === 'logo') {
+                console.warn('[Preloader] Logo not found, will use background as fallback');
+            } else if (file.key === 'spikes') {
+                console.warn('[Preloader] Spikes atlas JSON not found, already loaded as image');
+            } else {
+                console.warn(`[Preloader] Resource load error: ${file.key}`);
+            }
+        });
         
         // 加载自定义鼠标光标
         this.load.image('crosshair', 'assets/crosshair_1.png');
@@ -46,41 +64,14 @@ export class Preloader extends Scene
         // Download tilemap.
         this.load.text('tilemap_json_raw', 'assets/tilemap/scenes/tilemap.json');
         
-        // 骑士资源将通过 tilemap.json 配置自动加载（firstgid: 3, atlas: true）
+        // 使用安全的资源加载方法
+        this.loadCoreResources();
         
         // 加载各种武器atlas（手枪、步枪、霰弹枪）
         this.loadWeaponAtlases();
         
         // 加载子弹精灵表 - 3种不同的子弹样式
-        
-        // Bullets 1: 288x32 = 9帧 32x32 
-        this.load.spritesheet('bullets1', 'assets/bullets1.png', { 
-            frameWidth: 32, 
-            frameHeight: 32 
-        });
-        
-        // Bullets 2: 320x32 = 10帧 32x32
-        this.load.spritesheet('bullets2', 'assets/bullets2.png', { 
-            frameWidth: 32, 
-            frameHeight: 32 
-        });
-        
-        // Bullets 3: 800x32 = 25帧 32x32  
-        this.load.spritesheet('bullets3', 'assets/bullets3.png', { 
-            frameWidth: 32, 
-            frameHeight: 32 
-        });
-        
-        // 子弹资源加载监听器已移除以减少日志输出
-        
-        // 加载敌人atlas
-        this.load.atlas('flying_creature', 'assets/enemy/fly.png', 'assets/enemy/fly.json');
-        
-        this.load.atlas('goblin', 'assets/enemy/goblin.png', 'assets/enemy/goblin.json');
-        
-        this.load.atlas('slime', 'assets/enemy/slime.png', 'assets/enemy/slime.json');
-        
-        // 地刺将通过 tilemap.json 配置自动加载（atlas: true）
+        this.loadBulletSpritesheets();
         
         // Listen for text file loading completion, then load other resources during preload phase
         this.load.once('filecomplete-text-tilemap_json_raw', () => {
@@ -128,6 +119,17 @@ export class Preloader extends Scene
                 return;
             }
 
+            // 修复路径映射 - 确保路径正确
+            imageUri = this.correctAssetPath(imageUri);
+
+            // 避免重复加载已手动加载的资源
+            if (this.isAlreadyManuallyLoaded(name)) {
+                console.log(`[Preloader] Skipping ${name} - already manually loaded`);
+                return;
+            }
+            
+            console.log(`[Preloader] Loading tileset: ${name}, isAtlas: ${isAtlas}, path: ${imageUri}`);
+
             if (isAtlas) {
                 // Replace the file extension of imageUri with .json
                 let atlasJsonUri = imageUri.replace(/(\.[^/.]+)$/, '.json');
@@ -140,6 +142,150 @@ export class Preloader extends Scene
                 this.load.image(name, imageUri);
             }
         })
+    }
+
+    /**
+     * 修正资源路径 - 确保路径格式正确
+     */
+    private correctAssetPath(path: string): string {
+        // 如果路径已经包含 'assets/'，确保格式正确
+        if (path.startsWith('assets/')) {
+            return path;
+        }
+        
+        // 如果路径不包含 'assets/'，添加前缀
+        if (!path.startsWith('/') && !path.startsWith('assets/')) {
+            return `assets/${path}`;
+        }
+        
+        return path;
+    }
+
+    /**
+     * 检查资源是否已经手动加载，避免重复加载冲突
+     */
+    private isAlreadyManuallyLoaded(name: string): boolean {
+        const manuallyLoadedAssets = [
+            'knight',           // 手动作为atlas加载
+            'spikes',           // 手动作为image加载
+            'logo',             // 手动作为image加载
+            'crosshair'         // 手动作为image加载
+        ];
+        
+        return manuallyLoadedAssets.includes(name);
+    }
+
+    /**
+     * 验证所有已加载的资源
+     */
+    private validateAllLoadedResources(): void {
+        console.log('\n[Preloader] ===== 资源验证开始 =====');
+        
+        const report = this.resourceValidator.validateAllResources();
+        
+        // 输出验证结果
+        report.results.forEach(result => {
+            switch (result.severity) {
+                case 'error':
+                    console.error(`❌ ${result.message}`);
+                    break;
+                case 'warning':
+                    console.warn(`⚠️ ${result.message}`);
+                    break;
+                case 'info':
+                    console.log(`✅ ${result.message}`);
+                    break;
+            }
+        });
+        
+        // 输出总结
+        if (report.hasErrors) {
+            console.error(`[Preloader] 发现 ${report.errors.length} 个严重错误！`);
+            console.error('[Preloader] 错误列表:', report.errors);
+        }
+        
+        if (report.hasWarnings) {
+            console.warn(`[Preloader] 发现 ${report.warnings.length} 个警告`);
+            console.warn('[Preloader] 警告列表:', report.warnings);
+        }
+        
+        if (!report.hasErrors && !report.hasWarnings) {
+            console.log('🎉 [Preloader] 所有资源验证通过！');
+        }
+        
+        console.log('[Preloader] ===== 资源验证结束 =====\n');
+    }
+
+    /**
+     * 处理资源fallback，确保关键资源可用
+     */
+    private handleResourceFallbacks(): void {
+        // 如果logo加载失败，使用background作为fallback
+        if (!this.textures.exists('logo') && this.textures.exists('background')) {
+            console.log('[Preloader] Using background as logo fallback');
+        }
+        
+        // 检查spikes资源是否正确加载
+        if (!this.textures.exists('spikes')) {
+            console.warn('[Preloader] Spikes texture not found after loading');
+        } else {
+            console.log('[Preloader] Spikes texture loaded successfully');
+        }
+        
+        // 检查knight资源
+        if (!this.textures.exists('knight')) {
+            console.warn('[Preloader] Knight texture not found after loading');
+        } else {
+            console.log('[Preloader] Knight texture loaded successfully');
+        }
+    }
+
+    /**
+     * 安全加载核心资源
+     */
+    private loadCoreResources(): void {
+        console.log('[Preloader] Loading core resources with validation...');
+        
+        // 安全加载已注册的核心资源
+        const coreResources = ['knight', 'spikes', 'flying_creature', 'goblin', 'slime', 'crosshair'];
+        
+        for (const resourceName of coreResources) {
+            const loaded = this.resourceValidator.safeLoadResource(this.load, resourceName);
+            if (!loaded) {
+                console.warn(`[Preloader] Failed to load core resource: ${resourceName}`);
+            }
+        }
+    }
+    
+    /**
+     * 加载子弹精灵表
+     */
+    private loadBulletSpritesheets(): void {
+        console.log('[Preloader] Loading bullet spritesheets...');
+        
+        try {
+            // Bullets 1: 288x32 = 9帧 32x32 
+            this.load.spritesheet('bullets1', 'assets/bullets1.png', { 
+                frameWidth: 32, 
+                frameHeight: 32 
+            });
+            
+            // Bullets 2: 320x32 = 10帧 32x32
+            this.load.spritesheet('bullets2', 'assets/bullets2.png', { 
+                frameWidth: 32, 
+                frameHeight: 32 
+            });
+            
+            // Bullets 3: 800x32 = 25帧 32x32  
+            this.load.spritesheet('bullets3', 'assets/bullets3.png', { 
+                frameWidth: 32, 
+                frameHeight: 32 
+            });
+            
+            console.log('[Preloader] Bullet spritesheets loading initiated');
+        } catch (error) {
+            console.error('[Preloader] Error loading bullet spritesheets:', error);
+        }
     }
 
     private loadWeaponAtlases(): void {
@@ -171,6 +317,12 @@ export class Preloader extends Scene
     {
         // Initialize AnimationManager with this scene
         // 注意：AnimationManager 已在构造函数中初始化
+        
+        // 验证所有资源加载状态
+        this.validateAllLoadedResources();
+        
+        // 处理资源fallback
+        this.handleResourceFallbacks();
         
         // 子弹资源验证已移除以减少日志输出
         

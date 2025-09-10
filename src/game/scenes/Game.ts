@@ -12,6 +12,7 @@ import { EnemySpawner } from '../managers/EnemySpawner';
 import { ObjectPoolManager } from '../managers/ObjectPoolManager';
 import { ConfigManager } from '../config/ConfigManager';
 import { GameStateManager } from '../managers/GameStateManager';
+import { SafetyUtils } from '../utils/SafetyUtils';
 import { eventBus, GameEvent } from '../events/EventBus';
 import type { IGameScene } from '../types/GameTypes';
 
@@ -98,14 +99,12 @@ export class Game extends Scene implements IGameScene
             console.error('Background texture not found');
         }
 
-        // Load tilesets from tilemap config.
+        // Load tilesets from tilemap config using safe methods
         this.tilesets = [];
         this.map.tilesets.forEach((tileset: Phaser.Tilemaps.Tileset) => {
-            let addedTileset = this.map.addTilesetImage(tileset.name, tileset.name);
+            const addedTileset = SafetyUtils.safeAddTileset(this.map, tileset.name, tileset.name, this);
             if (addedTileset) {
                 this.tilesets.push(addedTileset);
-            } else {
-                console.error('Failed to add tileset:', tileset.name);
             }
         });
 
